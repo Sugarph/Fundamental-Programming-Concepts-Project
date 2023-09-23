@@ -105,9 +105,8 @@ async def register(ctx):
 
     await user.send("Successfully registered!")
     print("register command called")
-
-
     
+
 #create timetable from API response
 def create_timetable(api_response):
     timetable = []
