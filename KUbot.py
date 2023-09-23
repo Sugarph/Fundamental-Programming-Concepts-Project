@@ -7,7 +7,8 @@ import time
 import json
 from pymyku.utils import extract
 import pymyku
-from datetime import datetime, timedelta
+import datetime
+
 
 
 DAY_COLORS = {
@@ -75,10 +76,11 @@ async def table(ctx):
     timetable = create_timetable(api_response)
 
     subject_schedule = extract_subject_info(timetable)
-    target_day = get_next_class_day()
-    timetable_embed = create_timetable_embed(subject_schedule, target_day)
+    
+    schedule_unix(subject_schedule)
 
-    await ctx.send(embed=timetable_embed)
+    #await ctx.send(embed=timetable_embed)
+    await ctx.send(subject_schedule)
     print("Table command called")
 
 
@@ -123,7 +125,7 @@ def create_timetable(api_response):
         # Combine the details into a timetable entry
         timetable_entry = f"Subject: {subject_name_th}, Day: {day_w}, Time: {time_from} - {time_to}, Room: {room_name_th}"
         timetable.append(timetable_entry)
-    print(timetable)
+    
 
     return '\n'.join(timetable) # Join the timetable with newline everytime 
 
@@ -143,38 +145,62 @@ def extract_subject_info(timetable):
     return schedule
 
 
-def create_timetable_embed(schedule, target_day):
-    embed = Embed(title=f'Timetable\nYour class schedule for {target_day}:', color=DAY_COLORS.get(target_day, Colour.default()))
+def get_monday_midnight():
+    # Get the current date and time
+    now = datetime.datetime.now()
 
-    found = False  # Flag to indicate if any classes were found for the target day
+    # Calculate the days until the current Monday (0: Monday, 1: Tuesday, ..., 6: Sunday)
+    days_until_current_monday = now.weekday()
 
-    for subject_info in schedule:
-        if subject_info['Day'] == target_day:
-            subject_details = f"**Subject:** {subject_info['Subject']}\n**Time:** {subject_info['Time']}\n**Room:** {subject_info['Room']}"
-            embed.add_field(name=f"{subject_info['Subject']}", value=subject_details, inline=False)
-            found = True  # Set flag to True since we found at least one class for the target day
-    
-    if not found:
-        embed.add_field(name='No classes', value=f'No classes scheduled for {target_day}.', inline=False)
+    # Calculate the current Monday midnight
+    current_monday_midnight = datetime.datetime(now.year, now.month, now.day) - datetime.timedelta(days=days_until_current_monday)
 
-    return embed
+    # Convert the current Monday midnight to Unix time
+    unix_time = int(current_monday_midnight.timestamp())
+    return unix_time
+
+monday_midnight = get_monday_midnight()
+
+def convert_to_unix(day_of_week, time_str):
+    start_time, end_time = time_str.split(' - ')
+    start_hour, start_minute = map(int, start_time.split(':'))
+    end_hour, end_minute = map(int, end_time.split(':'))
+
+    # Calculate seconds since Monday midnight (start of the week)
+    seconds_since_monday_midnight = day_of_week * 86400 + start_hour * 3600 + start_minute * 60
+    start_unix = seconds_since_monday_midnight
+    end_unix = seconds_since_monday_midnight + (end_hour - start_hour) * 3600 + (end_minute - start_minute) * 60
+
+    return start_unix + monday_midnight, end_unix + monday_midnight
+
+def schedule_unix(schedule):
+    schedule_by_day = {}
+
+    for item in schedule:
+        day = item['Day']
+        if day not in schedule_by_day:
+            schedule_by_day[day] = []
+        schedule_by_day[day].append({
+            'Subject': item['Subject'],
+            'Time': item['Time'],
+            'Room': item['Room']
+        })
+    
+    for day, subjects in schedule_by_day.items():
+        day_of_week = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].index(day)
+        
+        for subject in subjects:
+            start_unix, end_unix = convert_to_unix(day_of_week, subject['Time'])
+            subject['UnixStartTime'] = start_unix
+            subject['UnixEndTime'] = end_unix
+            del subject['Time']
+    
+    print(schedule_by_day)
 
 
-def get_next_class_day():
-    today = datetime.now().strftime('%a')
-    
-    if today == 'Sat' or today == 'Sun':
-        return 'Mon'
-    
-    next_day = today
-    while next_day == today:
-        tomorrow = datetime.now() + timedelta(days=1)
-        next_day = tomorrow.strftime('%a')
-    
-    return next_day
-    
 
 
 load_dotenv()
+
 TOKEN = os.getenv("API_TOKEN")
 client.run(TOKEN)
