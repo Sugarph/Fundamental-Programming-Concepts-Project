@@ -103,7 +103,6 @@ async def register(ctx):
         "last_api_call": api_call_time
     }
 
-    timetable = create_timetable(response)
     await user.send("Successfully registered!")
     print("register command called")
 
@@ -113,7 +112,7 @@ async def register(ctx):
 def create_timetable(api_response):
     timetable = []
 
-    for course in api_response['results'][0]['course']: #in api_resoinse in results in course ,it dict in dict in dict ;-;
+    for course in api_response['results'][0]['course']: #It from Json file 
         subject_name_th = course['subject_name_th']
         subject_name_en = course['subject_name_en']
         day_w = course['day_w'].strip()
@@ -123,7 +122,7 @@ def create_timetable(api_response):
         room_name_en = course['room_name_en']
 
         # Combine the details into a timetable entry
-        timetable_entry = f"Subject: {subject_name_th}, Day: {day_w}, Time: {time_from} - {time_to}, Room: {room_name_th}"
+        timetable_entry = f"Subject: {subject_name_en}, Day: {day_w}, Time: {time_from} - {time_to}, Room: {room_name_en}"
         timetable.append(timetable_entry)
     
 
