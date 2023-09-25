@@ -1,20 +1,12 @@
-# main_bot_script.py
-
 import os
 import discord
 from discord.ext import commands
 from discord import Embed, Colour
 from dotenv import load_dotenv
 import time
-import json
 from pymyku.utils import extract
 import pymyku
-import datetime
-from KUbot.utils import schedule_unix, get_monday_midnight, convert_to_unix
-
-# ... rest of your code ...
-
-
+from utils import *
 
 
 DAY_COLORS = {
@@ -26,6 +18,7 @@ DAY_COLORS = {
     'SAT': Colour.purple(),
     'SUN': Colour.red()
 }
+
 intents = discord.Intents.all()
 intents.message_content = True  # Allow access to message content
 
@@ -64,7 +57,7 @@ async def leave(ctx):
         await ctx.send("I am not in a voice channel.")
 
 @client.command()
-async def table(ctx): 
+async def next(ctx): 
     user_id = ctx.author.id
     if user_id not in user_data: 
         await ctx.send("You are not registered. Please use the !register command.")
@@ -79,15 +72,21 @@ async def table(ctx):
         return
 
     api_response = user_info["api_response"]
-    timetable = create_timetable(api_response)
+    upcoming_class, current_day = get_upcoming_class(api_response)
 
-    subject_schedule = extract_subject_info(timetable)
+    #Create embed
+    if upcoming_class:
+        embed = discord.Embed(title="Next Class", description = upcoming_class['Subject'], color = DAY_COLORS[current_day])
+        embed.add_field(name="Class start time", value=f"<t:{upcoming_class['UnixStartTime']}>", inline=False)
+        embed.add_field(name="Time until class start", value=f"<t:{upcoming_class['UnixStartTime']}:R>", inline=False)
+        embed.add_field(name="Room", value= upcoming_class['Room'], inline=False)
+    else:
+        embed = discord.Embed(title="No upcoming class today.", color = DAY_COLORS[current_day])
+
+    # Send the embed
+    await ctx.send(embed=embed)
+    print("Next command called")
     
-    schedule_unix(subject_schedule)
-
-    #await ctx.send(embed=timetable_embed)
-    await ctx.send(subject_schedule)
-    print("Table command called")
 
 
 
@@ -100,57 +99,24 @@ async def register(ctx):
         return msg.author == user and msg.channel.type == discord.ChannelType.private  #Check is message from dm is same user who call the command
     
     response_msg = await client.wait_for('message', check=check, timeout=300) 
-    username, password = response_msg.content.split(':')
-    ku_client = pymyku.Client(username, password)
-    response = ku_client.fetch_group_course()
-    api_call_time = time.time()
-    user_data[user.id] = {
-        "api_response": response,
-        "last_api_call": api_call_time
-    }
+    try:
+        username, password = response_msg.content.split(':')
+        ku_client = pymyku.Client(username, password)
+        response = ku_client.fetch_group_course()
+        api_call_time = time.time()
+        user_data[user.id] = {
+            "api_response": response,
+            "last_api_call": api_call_time
+        }
+    except:
+        await user.send("Something went wrong!")
 
     await user.send("Successfully registered!")
     print("register command called")
 
 
-#create timetable from API response
-def create_timetable(api_response):
-    timetable = []
-
-    for course in api_response['results'][0]['course']: 
-        subject_name_th = course['subject_name_th']
-        subject_name_en = course['subject_name_en']
-        day_w = course['day_w'].strip()
-        time_from = course['time_from']
-        time_to = course['time_to']
-        room_name_th = course['room_name_th']
-        room_name_en = course['room_name_en']
-
-        # Combine the details into a timetable entry
-        timetable_entry = f"Subject: {subject_name_en}, Day: {day_w}, Time: {time_from} - {time_to}, Room: {room_name_en}"
-        timetable.append(timetable_entry)
-    
-
-    return '\n'.join(timetable) # Join the timetable with newline everytime 
-
-def extract_subject_info(timetable):
-    subjects = timetable.strip().split('\n')
-    schedule = []
-
-    # Iterate through each subject and extract relevant information
-    for subject in subjects:
-        parts = subject.strip().split(', ')
-        subject_info = {}
-        for part in parts:
-            key, value = part.split(': ')
-            subject_info[key] = value
-        schedule.append(subject_info)
-
-    return schedule
-
 
 
 load_dotenv()
-
 TOKEN = os.getenv("API_TOKEN")
 client.run(TOKEN)
