@@ -1,0 +1,37 @@
+{
+  "code": "success",
+  "results": [
+    {
+      "period_date": "26/06/2566-20/10/2566",
+      "course": [
+        {
+          "section_id": 123456,
+          "groupheader": "26/06/2566-20/10/2566",
+          "weekstartday": "2023-06-26T00:00:00.000Z",
+          "weekendday": "2023-10-20T00:00:00.000Z",
+          "std_id": "789012",
+          "subject_code": "XXXXXX-XX",
+          "subject_name_th": "Subject Name (Thai)",
+          "subject_name_en": "Subject Name (English)",
+          "section_code": "XXX",
+          "section_type": "XXXXX",
+          "section_type_th": "Lecture",
+          "section_type_en": "Lecture",
+          "student_status_code": "XXXXX",
+          "std_status_th": "Regular",
+          "std_status_en": "Regular",
+          "teacher_name": "Teacher Name",
+          "teacher_name_en": "Teacher Name",
+          "day_w_c": "XXXXXXX",
+          "time_from": "XX:XX",
+          "time_to": "XX:XX",
+          "day_w": "XXX ",
+          "room_name_th": "Room Name (Thai)",
+          "room_name_en": "Room Name (English)",
+          "time_start": 480
+        }
+      ]
+    }
+  ],
+  "cache": true
+}
