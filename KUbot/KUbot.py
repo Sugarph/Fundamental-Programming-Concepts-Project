@@ -10,7 +10,7 @@ import json
 from pymyku.utils import extract
 import pymyku
 import datetime
-from utils import schedule_unix, get_monday_midnight, convert_to_unix
+from KUbot.utils import schedule_unix, get_monday_midnight, convert_to_unix
 
 # ... rest of your code ...
 
