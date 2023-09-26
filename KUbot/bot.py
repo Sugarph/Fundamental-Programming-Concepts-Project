@@ -7,6 +7,7 @@ import time
 from pymyku.utils import extract
 import pymyku
 from utils import *
+import json
 
 
 DAY_COLORS = {
@@ -59,17 +60,9 @@ async def leave(ctx):
 @client.command()
 async def next(ctx): 
     user_id = ctx.author.id
-    if user_id not in user_data: 
-        await ctx.send("You are not registered. Please use the !register command.")
-        return 
-
-    user_info = user_data[user_id]
-    last_api_call = user_info.get("last_api_call", 0)
-    current_time = time.time()
-    
-    if current_time - last_api_call >= 86400: 
-        await ctx.send("It's been more than 1 day since last data update. Please use the !register command again.")
+    if not await user_check(ctx, user_id):  
         return
+    user_info = user_data[user_id]
 
     api_response = user_info["api_response"]
     upcoming_class, current_day = get_upcoming_class(api_response)
@@ -87,8 +80,6 @@ async def next(ctx):
     await ctx.send(embed=embed)
     print("Next command called")
     
-
-
 
 @client.command()
 async def register(ctx):
@@ -113,6 +104,21 @@ async def register(ctx):
 
     await user.send("Successfully registered!")
     print("register command called")
+
+async def user_check(ctx, user_id):
+    if user_id not in user_data:
+        await ctx.send("You are not registered. Please use the !register command.")
+        return 
+
+    user_info = user_data[user_id]
+    last_api_call = user_info.get("last_api_call", 0)
+    current_time = time.time()
+
+    if current_time - last_api_call >= 86400:
+        await ctx.send("It's been more than 1 day since the last data update. Please use the !register command again.")
+        return 
+
+    return True
 
 
 
