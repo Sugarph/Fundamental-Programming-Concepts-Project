@@ -1,4 +1,5 @@
 import os
+from sqlite3 import Time
 import discord
 from discord.ext import commands
 from discord import Embed, Colour
@@ -7,7 +8,10 @@ import time
 from pymyku.utils import extract
 import pymyku
 from utils import *
-import json
+
+
+load_dotenv()
+TOKEN = os.getenv("API_TOKEN")
 
 
 DAY_COLORS = {
@@ -26,8 +30,6 @@ intents.message_content = True  # Allow access to message content
 client = commands.Bot(command_prefix='!', intents=intents)
 user_data = {}
 
-
-
 @client.event
 async def on_ready():
     print("KUbot is now online!")
@@ -40,32 +42,32 @@ async def ping(ctx):# Resond pong! with time it take in ms
     duration_ms = (end_time - start_time) * 1000
     await message.edit(content=f"Pong! Round-trip time: {duration_ms:.2f} ms")
 
-@client.command()
-async def join(ctx):
-    if ctx.author.voice:
-            channel = ctx.author.voice.channel
-            await channel.connect()
-    else:
-        await ctx.send("You are not in a voice channel.")
+# @client.command()
+# async def join(ctx):
+#     if ctx.author.voice:
+#             channel = ctx.author.voice.channel
+#             await channel.connect()
+#     else:
+#         await ctx.send("You are not in a voice channel.")
 
-@client.command()
-async def leave(ctx): 
-    if ctx.voice_client and ctx.voice_client.guild == ctx.guild: # Check if the bot is in a voice channel in the same guild as the author
-        channel_left = ctx.author.voice.channel
-        await ctx.voice_client.disconnect()
-        await ctx.send(f"I has left from {channel_left} channel")
-    else:
-        await ctx.send("I am not in a voice channel.")
+# @client.command()
+# async def leave(ctx): 
+#     if ctx.voice_client and ctx.voice_client.guild == ctx.guild: 
+#         channel_left = ctx.author.voice.channel
+#         await ctx.voice_client.disconnect()
+#         await ctx.send(f"I has left from {channel_left} channel")
+#     else:
+#         await ctx.send("I am not in a voice channel.")
 
 @client.command()
 async def next(ctx): 
-    user_id = ctx.author.id
-    if not await user_check(ctx, user_id):  
+    user_id = ctx.author.id 
+    if not await user_check(ctx, user_id):
         return
     user_info = user_data[user_id]
 
-    api_response = user_info["api_response"]
-    upcoming_class, current_day = get_upcoming_class(api_response)
+    Timetable = user_info["Timetable"]
+    upcoming_class, current_day = get_upcoming_class(Timetable)
 
     #Create embed
     if upcoming_class:
@@ -84,6 +86,11 @@ async def next(ctx):
 @client.command()
 async def register(ctx):
     user = ctx.author
+    user_id = ctx.author.id
+    if user_id in user_data:
+        await ctx.send("You already register!")
+        return
+    await user.send("Disclaimer: This project is created for programming concepts project, and we don't collect your username or password.") #disclaimer
     await user.send("Please provide your username and password in the following format: Username:Password") #Send DMs to user 
     
     def check(msg):
@@ -93,17 +100,59 @@ async def register(ctx):
     try:
         username, password = response_msg.content.split(':')
         ku_client = pymyku.Client(username, password)
-        response = ku_client.fetch_group_course()
+        course = ku_client.fetch_group_course()
+        edu = ku_client.fetch_student_education()
         api_call_time = time.time()
         user_data[user.id] = {
-            "api_response": response,
             "last_api_call": api_call_time
         }
+        if course.get('message') == 'Data Not Found':
+            user_data[user_id]['Timetable'] = None
+        else:
+            timetable = create_timetable(course)
+            user_data[user_id]['Timetable'] = timetable
+        if edu.get('message') == 'Data Not Found':
+            user_data[user_id]['Education'] = None
+        else:
+            education_data = edu_data(course)
+            user_data[user_id]['Education'] = education_data
+
     except:
+        print(ku_client)
+        print(course)
         await user.send("Something went wrong!")
+        return
 
     await user.send("Successfully registered!")
+    await user.send(edu)
     print("register command called")
+
+@client.command()
+async def table(ctx):
+    user_id = ctx.author.id
+    if user_id not in user_data:
+        await ctx.send("You are not registered. Please use the `register` command.")
+        return
+
+    user_info = user_data[user_id]
+    Timetable = user_info.get("Timetable")
+
+    if Timetable is None:
+        await ctx.send("No timetable data available.")
+    else:
+        await ctx.send(Timetable)
+
+@client.command()
+async def reminder(ctx):
+    user_id = ctx.author.id
+    user_check(ctx, user_id)
+    if not await user_check(ctx, user_id):  
+        return
+    user_info = user_data[user_id]
+    Timetable = user_info["Timetable"]
+    subject_schedule = extract_subject_info(Timetable)
+    schedule = schedule_unix(subject_schedule)
+    print("reminder command called")
 
 async def user_check(ctx, user_id):
     if user_id not in user_data:
@@ -123,6 +172,5 @@ async def user_check(ctx, user_id):
 
 
 
-load_dotenv()
-TOKEN = os.getenv("API_TOKEN")
+
 client.run(TOKEN)

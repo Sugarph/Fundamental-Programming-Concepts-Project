@@ -70,13 +70,28 @@ def create_timetable(api_response):
         timetable.append(timetable_entry)
     
 
-    return '\n'.join(timetable) # Join the timetable with newline everytime 
+    return '\n'.join(timetable) #Create newline every subject
+
+
+def edu_data(data):
+    education_data = data["results"]["education"][0]
+    
+    edulevelNameEn = education_data['edulevelNameEn']
+    statusNameEn = education_data['statusNameEn']
+    degreeNameEn = education_data['degreeNameEn']
+    typeNameEn = education_data['typeNameEn']
+    campusNameEn = education_data['campusNameEn']
+    curNameEn = education_data['curNameEn']
+    facultyNameEn = education_data['facultyNameEn']
+    majorNameEn = education_data['majorNameEn']
+    majorCode = education_data['majorCode']
+    stu_data = f"Education Level: {edulevelNameEn}, Status: {statusNameEn}, Degree: {degreeNameEn}, Type: {typeNameEn}, Campus: {campusNameEn}, Curriculum: {curNameEn}, Faculty: {facultyNameEn}, Major: {majorNameEn}, Major Code: {majorCode}"
+    return stu_data
 
 def extract_subject_info(timetable):
     subjects = timetable.strip().split('\n')
     schedule = []
 
-    # Iterate through each subject and extract relevant information
     for subject in subjects:
         parts = subject.strip().split(', ')
         subject_info = {}
@@ -87,8 +102,7 @@ def extract_subject_info(timetable):
 
     return schedule
 
-def get_upcoming_class(api_response):
-    timetable = create_timetable(api_response)
+def get_upcoming_class(timetable):
     subject_schedule = extract_subject_info(timetable)
     schedule = schedule_unix(subject_schedule)
     current_date = datetime.datetime.now()
@@ -98,8 +112,12 @@ def get_upcoming_class(api_response):
 
     for cls in classes_today:
         if cls['UnixEndTime'] > current_time:
+
+            end_time = cls['UnixEndTime']
             return cls, current_day
-        
+    
+
+    
     return None, current_day
 
 
