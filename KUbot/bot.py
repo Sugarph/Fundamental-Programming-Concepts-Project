@@ -13,7 +13,7 @@ from utils import *
 load_dotenv()
 TOKEN = os.getenv("API_TOKEN")
 
-
+#colors for each day of the week
 DAY_COLORS = {
     'MON': Colour.yellow(),
     'TUE': Colour.pink(),
@@ -24,6 +24,7 @@ DAY_COLORS = {
     'SUN': Colour.red()
 }
 
+# Set up the Discord bot
 intents = discord.Intents.all()
 intents.message_content = True  # Allow access to message content
 
@@ -34,14 +35,16 @@ user_data = {}
 async def on_ready():
     print("KUbot is now online!")
 
+# Resond pong! with time it take in ms
 @client.command()
-async def ping(ctx):# Resond pong! with time it take in ms
+async def ping(ctx):
     start_time = time.time()
     message = await ctx.send("Pong!")  
     end_time = time.time()
     duration_ms = (end_time - start_time) * 1000
     await message.edit(content=f"Pong! Round-trip time: {duration_ms:.2f} ms")
 
+# Not use
 # @client.command()
 # async def join(ctx):
 #     if ctx.author.voice:
@@ -90,7 +93,7 @@ async def register(ctx):
     if user_id in user_data:
         await ctx.send("You already register!")
         return
-    await user.send("Disclaimer: This project is created for programming concepts project, and we don't collect your username or password.") #disclaimer
+    await user.send("Disclaimer: This project is created for programming concepts project, and we don't collect your username or password.") #Disclaimer
     await user.send("Please provide your username and password in the following format: Username:Password") #Send DMs to user 
     
     def check(msg):
@@ -114,17 +117,18 @@ async def register(ctx):
         if edu.get('message') == 'Data Not Found':
             user_data[user_id]['Education'] = None
         else:
-            education_data = edu_data(course)
+            education_data = edu_data(edu)
             user_data[user_id]['Education'] = education_data
 
     except:
+        await user.send("Something went wrong!")
+        #Debug
         print(ku_client)
         print(course)
-        await user.send("Something went wrong!")
+        print(edu)
         return
 
     await user.send("Successfully registered!")
-    await user.send(edu)
     print("register command called")
 
 @client.command()
