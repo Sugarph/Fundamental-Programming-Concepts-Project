@@ -1,6 +1,10 @@
 # KUbot
 
-This project was created for the Fundamental Programming Concepts subject.
+This Discord bot was developed for the Fundamental Programming Concepts subject. It serves as a convenient tool for checking schedules and student data. To access its features, users need to log in using their MyKU account. Please note that we do not collect or store any username or password information.
 
-I found inspiration from the [KUtable](https://github.com/Noboomta/KU-Table) website and huge thanks to [pymyku](https://github.com/lazykern/pymyku) for API wrapper.
+## Acknowledgments
+- Inspired by [KUtable](https://github.com/Noboomta/KU-Table) website.
+- Special thanks to [pymyku](https://github.com/lazykern/pymyku) for the API wrapper.
 
+## Disclaimer
+This project was created specifically for the Fundamental Programming Concepts subject. While it provides useful functionalities, it is not recommended for general use beyond the scope of this educational context.
