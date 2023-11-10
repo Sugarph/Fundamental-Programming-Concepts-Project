@@ -1,19 +1,19 @@
 import os
-from sqlite3 import Time
 import discord
 from discord.ext import commands
-from discord import Embed, Colour
+from discord import Colour
 from dotenv import load_dotenv
 import time
 from pymyku.utils import extract
 import pymyku
 from utils import *
+import random
 
-
+#Load bot token
 load_dotenv()
 TOKEN = os.getenv("API_TOKEN")
 
-#colors for each day of the week
+#Colors for each day of the week
 DAY_COLORS = {
     'MON': Colour.yellow(),
     'TUE': Colour.pink(),
@@ -24,18 +24,18 @@ DAY_COLORS = {
     'SUN': Colour.red()
 }
 
-# Set up the Discord bot
+#Set up the Discord bot
 intents = discord.Intents.all()
-intents.message_content = True  # Allow access to message content
+intents.message_content = True  
 
 client = commands.Bot(command_prefix='!', intents=intents)
-user_data = {}
+user_data = {} #User data container
 
 @client.event
 async def on_ready():
     print("KUbot is now online!")
 
-# Resond pong! with time it take in ms
+#Resond pong! with time it take in ms
 @client.command()
 async def ping(ctx):
     start_time = time.time()
@@ -61,55 +61,32 @@ async def ping(ctx):
 #         await ctx.send(f"I has left from {channel_left} channel")
 #     else:
 #         await ctx.send("I am not in a voice channel.")
-
-@client.command()
-async def next(ctx): 
-    user_id = ctx.author.id 
-    if not await user_check(ctx, user_id):
-        return
-    user_info = user_data[user_id]
-
-    Timetable = user_info["Timetable"]
-    upcoming_class, current_day = get_upcoming_class(Timetable)
-
-    #Create embed
-    if upcoming_class:
-        embed = discord.Embed(title="Next Class", description = upcoming_class['Subject'], color = DAY_COLORS[current_day])
-        embed.add_field(name="Class start time", value=f"<t:{upcoming_class['UnixStartTime']}>", inline=False)
-        embed.add_field(name="Time until class start", value=f"<t:{upcoming_class['UnixStartTime']}:R>", inline=False)
-        embed.add_field(name="Room", value= upcoming_class['Room'], inline=False)
-    else:
-        embed = discord.Embed(title="No upcoming class today.", color = DAY_COLORS[current_day])
-
-    # Send the embed
-    await ctx.send(embed=embed)
-    print("Next command called")
-    
-
+   
+#register command 
 @client.command()
 async def register(ctx):
-    user = ctx.author
-    user_id = ctx.author.id
+    user = ctx.author #get user name 
+    user_id = ctx.author.id #get user id
     if user_id in user_data:
         await ctx.send("You already register!")
         return
     await user.send("Disclaimer: This project is created for programming concepts project, and we don't collect your username or password.") #Disclaimer
-    await user.send("Please provide your username and password in the following format: Username:Password") #Send DMs to user 
+    await user.send("Please provide your username and password in the following format: Username:Password")
     
     def check(msg):
-        return msg.author == user and msg.channel.type == discord.ChannelType.private  #Check is message from dm is same user who call the command
+        return msg.author == user and msg.channel.type == discord.ChannelType.private  #Check is message from dm is the same user who call the command
     
-    response_msg = await client.wait_for('message', check=check, timeout=300) 
+    response_msg = await client.wait_for('message', check=check, timeout=300) #Wait user to response
     try:
-        username, password = response_msg.content.split(':')
+        username, password = response_msg.content.split(':') 
         ku_client = pymyku.Client(username, password)
-        course = ku_client.fetch_group_course()
-        edu = ku_client.fetch_student_education()
-        api_call_time = time.time()
+        course = ku_client.fetch_group_course() 
+        edu = ku_client.fetch_student_education() 
+        api_call_time = time.time() #Get time that api is called
         user_data[user.id] = {
             "last_api_call": api_call_time
         }
-        if course.get('message') == 'Data Not Found':
+        if course.get('message') == 'Data Not Found': 
             user_data[user_id]['Timetable'] = None
         else:
             timetable = create_timetable(course)
@@ -122,21 +99,43 @@ async def register(ctx):
 
     except:
         await user.send("Something went wrong!")
-        #Debug
-        print(ku_client)
-        print(course)
-        print(edu)
         return
 
     await user.send("Successfully registered!")
     print("register command called")
 
+#Send the next class
+@client.command()
+async def next(ctx): 
+    user_id = ctx.author.id 
+    if not await user_check(ctx, user_id): #Check if user is registered
+        return
+    user_info = user_data[user_id] 
+    Timetable = user_info["Timetable"]
+    if Timetable is None:
+        await ctx.send("No timetable data available.")
+        return
+    upcoming_class, current_day = get_upcoming_class(Timetable)
+
+    #Create embed
+    if upcoming_class:
+        embed = discord.Embed(title="Next Class", description = upcoming_class['Subject'], color = DAY_COLORS[current_day])
+        embed.add_field(name="Class start time", value=f"<t:{upcoming_class['UnixStartTime']}>", inline=False)
+        embed.add_field(name="Time until class start", value=f"<t:{upcoming_class['UnixStartTime']}:R>", inline=False)
+        embed.add_field(name="Room", value= upcoming_class['Room'], inline=False)
+    else:
+        embed = discord.Embed(title="No upcoming class today.", color = DAY_COLORS[current_day])
+
+    #Send the embed
+    await ctx.send(embed=embed)
+    print("Next command called")
+
+#Send a list of classes that the user has
 @client.command()
 async def table(ctx):
     user_id = ctx.author.id
-    if user_id not in user_data:
-        await ctx.send("You are not registered. Please use the `register` command.")
-        return
+    if not await user_check(ctx, user_id):
+            return
 
     user_info = user_data[user_id]
     Timetable = user_info.get("Timetable")
@@ -146,17 +145,20 @@ async def table(ctx):
     else:
         await ctx.send(Timetable)
 
+#Send User education data
 @client.command()
-async def reminder(ctx):
+async def mydata(ctx):
     user_id = ctx.author.id
-    user_check(ctx, user_id)
-    if not await user_check(ctx, user_id):  
-        return
-    user_info = user_data[user_id]
-    Timetable = user_info["Timetable"]
-    subject_schedule = extract_subject_info(Timetable)
-    schedule = schedule_unix(subject_schedule)
-    print("reminder command called")
+    if not await user_check(ctx, user_id):
+            return
+    edu_embed = create_education_embed(user_data[user_id]['Education'])
+    await ctx.send(embed=edu_embed)
+
+#Send a random number
+@client.command()
+async def rng(ctx, max : int = 10):
+    random_number = random.randint(0, max)
+    await ctx.send(random_number)
 
 async def user_check(ctx, user_id):
     if user_id not in user_data:
@@ -175,6 +177,5 @@ async def user_check(ctx, user_id):
 
 
 
-
-
+#Run the bot
 client.run(TOKEN)

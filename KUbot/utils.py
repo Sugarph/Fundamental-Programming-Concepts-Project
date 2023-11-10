@@ -1,8 +1,9 @@
 import time
 from datetime import datetime
 import datetime
+from discord import Embed, Colour
 
-
+#Get the monday midnight
 def get_monday_midnight():
     now = datetime.datetime.now()
 
@@ -13,8 +14,7 @@ def get_monday_midnight():
     unix_time = int(current_monday_midnight.timestamp())
     return unix_time
 
-
-
+#Convert time to Unix
 def convert_to_unix(day_of_week, time_str):
     monday_midnight = get_monday_midnight()
     start_time, end_time = time_str.split(' - ')
@@ -28,7 +28,7 @@ def convert_to_unix(day_of_week, time_str):
 
     return start_unix + monday_midnight, end_unix + monday_midnight
 
-
+#Convert the schedule data to Unix
 def schedule_unix(schedule):
     schedule_by_day = {}
 
@@ -43,7 +43,7 @@ def schedule_unix(schedule):
         })
     
     for day, subjects in schedule_by_day.items():
-        day_of_week = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].index(day)
+        day_of_week = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].index(day) # convert day to number
         
         for subject in subjects:
             start_unix, end_unix = convert_to_unix(day_of_week, subject['Time'])
@@ -57,6 +57,7 @@ def schedule_unix(schedule):
 def create_timetable(api_response):
     timetable = []
 
+#Get all data from api response
     for course in api_response['results'][0]['course']: 
         subject_name_th = course['subject_name_th']
         subject_name_en = course['subject_name_en']
@@ -85,8 +86,19 @@ def edu_data(data):
     facultyNameEn = education_data['facultyNameEn']
     majorNameEn = education_data['majorNameEn']
     majorCode = education_data['majorCode']
-    stu_data = f"Education Level: {edulevelNameEn}, Status: {statusNameEn}, Degree: {degreeNameEn}, Type: {typeNameEn}, Campus: {campusNameEn}, Curriculum: {curNameEn}, Faculty: {facultyNameEn}, Major: {majorNameEn}, Major Code: {majorCode}"
-    return stu_data
+    data_dict = {
+        "edulevelNameEn": edulevelNameEn,
+        "statusNameEn": statusNameEn,
+        "degreeNameEn": degreeNameEn,
+        "typeNameEn": typeNameEn,
+        "campusNameEn": campusNameEn,
+        "curNameEn": curNameEn,
+        "facultyNameEn": facultyNameEn,
+        "majorNameEn": majorNameEn,
+        "majorCode": majorCode
+    }
+    return data_dict
+
 
 def extract_subject_info(timetable):
     subjects = timetable.strip().split('\n')
@@ -112,12 +124,26 @@ def get_upcoming_class(timetable):
 
     for cls in classes_today:
         if cls['UnixEndTime'] > current_time:
-
-            end_time = cls['UnixEndTime']
             return cls, current_day
-    
-
-    
+        
     return None, current_day
 
 
+def create_education_embed(data_dict):
+    # Create embed
+    embed = Embed(
+        title="Education Data",
+        color=Colour.blue()
+    )
+
+    embed.add_field(name="Education Level", value=data_dict["edulevelNameEn"], inline=False)
+    embed.add_field(name="Status", value=data_dict["statusNameEn"], inline=False)
+    embed.add_field(name="Degree", value=data_dict["degreeNameEn"], inline=False)
+    embed.add_field(name="Type", value=data_dict["typeNameEn"], inline=False)
+    embed.add_field(name="Campus", value=data_dict["campusNameEn"], inline=False)
+    embed.add_field(name="Curriculum", value=data_dict["curNameEn"], inline=False)
+    embed.add_field(name="Faculty", value=data_dict["facultyNameEn"], inline=False)
+    embed.add_field(name="Major", value=data_dict["majorNameEn"], inline=False)
+    embed.add_field(name="Major Code", value=data_dict["majorCode"], inline=False)
+
+    return embed
