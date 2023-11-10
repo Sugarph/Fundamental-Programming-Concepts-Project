@@ -75,28 +75,16 @@ def create_timetable(api_response):
 
 
 def edu_data(data):
-    education_data = data["results"]["education"][0]
-    
-    edulevelNameEn = education_data['edulevelNameEn']
-    statusNameEn = education_data['statusNameEn']
-    degreeNameEn = education_data['degreeNameEn']
-    typeNameEn = education_data['typeNameEn']
-    campusNameEn = education_data['campusNameEn']
-    curNameEn = education_data['curNameEn']
-    facultyNameEn = education_data['facultyNameEn']
-    majorNameEn = education_data['majorNameEn']
-    majorCode = education_data['majorCode']
-    data_dict = {
-        "edulevelNameEn": edulevelNameEn,
-        "statusNameEn": statusNameEn,
-        "degreeNameEn": degreeNameEn,
-        "typeNameEn": typeNameEn,
-        "campusNameEn": campusNameEn,
-        "curNameEn": curNameEn,
-        "facultyNameEn": facultyNameEn,
-        "majorNameEn": majorNameEn,
-        "majorCode": majorCode
-    }
+    data_dict = {}
+    education_data = data.get("results").get("education")[0]
+
+    keys = ["edulevelNameEn", "statusNameEn", "degreeNameEn", "typeNameEn",
+            "campusNameEn", "curNameEn", "facultyNameEn", "majorNameEn", "majorCode"]
+
+
+    for key in keys:
+        data_dict[key] = education_data.get(key)
+
     return data_dict
 
 
