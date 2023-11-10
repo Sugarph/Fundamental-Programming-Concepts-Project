@@ -7,4 +7,4 @@ This Discord bot was developed for the Fundamental Programming Concepts subject.
 - Special thanks to [pymyku](https://github.com/lazykern/pymyku) for the API wrapper.
 
 ## Disclaimer
-This project was created specifically for the Fundamental Programming Concepts subject. While it provides useful functionalities, it is not recommended for general use beyond the scope of this educational context.
+This project was created specifically for the Fundamental Programming Concepts subject. While it provides useful functionalities, it is not recommended for general use beyond the scope of a friends group or trusted individuals.
